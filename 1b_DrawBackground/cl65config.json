@@ -1,0 +1,4 @@
+{
+  "executable": "/home/sunday/cc65/bin/cl65",
+  "params": "--verbose --target nes"
+}
