@@ -96,11 +96,28 @@ main: ;main game loop
   jsr Controller
   jsr move
   jsr delayLoop
-  jsr delayLoop
-  jsr delayLoop
-   jsr delayLoop
+
+  jsr move
     jsr delayLoop
-     jsr delayLoop
+
+  jsr move
+    jsr delayLoop
+  jsr move
+    jsr delayLoop
+ 
+  jsr move
+    jsr delayLoop
+
+  jsr move
+    jsr delayLoop
+
+  jsr move
+    jsr delayLoop
+
+  jsr move
+  jsr delayLoop
+  ldy #$00
+
      
 
   jmp main
@@ -113,20 +130,20 @@ interrupts: ;caled when an interrupt happens
 
 rti
 
-move:
-    ldx $0224 ;up press
+move:; change 2 to 4
+    ldx $0244 ;up press
     cpx #$41
     bcs moveUP
     
-    ldx $0225 ;down press
+    ldx $0245 ;down press
     cpx #$41
     bcs moveDOWN
 
-    ldx $0226 ;left press
+    ldx $0246 ;left press
     cpx #$41
     bcs moveLEFT
 
-    ldx $0227 ;right press
+    ldx $0247 ;right press
     cpx #$41
     bcs moveRIGHT
 
@@ -320,7 +337,11 @@ delayLoop: ;used to stall
   inx
   cpx #$FF
   bcc delayLoop
+  iny
+  cpy #$08
+  bcc delayLoop
   rts
+  
 
 ScanInput:
   ldx #$01 ;1 to enable controller polling
@@ -339,6 +360,7 @@ Controller: ;process controller inputs
   ;stx $0210 ;store the controller's state at memory address $0210
   ;lda $0210
   sta $0220, y ;store all buttons' state in memory
+  jsr storePress ;stores the most recent d pad direction
 
   iny ;keeps track of reads
 
@@ -349,6 +371,42 @@ Controller: ;process controller inputs
   lda #$00
   ldx #$00
 
+  rts
+
+loopInit:
+  ldx #$00
+  cpx #$00
+
+incrementLoop:
+  inc $0300
+  inx
+  cpx #$08
+  bcc incrementLoop
+
+  rts
+
+storePress:
+  tax ;transfers the accumulator to x
+  cpx #$41 ;check if there was a button pressed
+  bcs storePress2 ;branches if pressed
+
+  ldx #$00
+
+  rts
+
+storePress2:
+  ldx #$00
+
+  stx $0240
+  stx $0241
+  stx $0242
+  stx $0243
+  stx $0244
+  stx $0245
+  stx $0246
+  stx $0247
+
+  sta $0240, y
   rts
 
 enableRendering:
