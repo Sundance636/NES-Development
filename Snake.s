@@ -89,7 +89,21 @@ memclear: ; initializes ram and wipes it clean during vblank
   lda #$00
   ldx #$00
 
+
+Titlescreen:
+  jsr ScanInput
+  jsr Controller
+  jsr move
+  inc $02A0 ; address to store game seed
+
+  ldy $0223 ;address for start button
+  cpy #$41 ;if start is pressed continue to main game
+  ldy #$00
+  bcc Titlescreen ; keep looping incrementing seed until start is pressed
+
+
   jsr spriteloop ;initializes sprite data
+
 
 main: ;main game loop
   jsr ScanInput
