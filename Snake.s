@@ -93,7 +93,7 @@ memclear: ; initializes ram and wipes it clean during vblank
 Titlescreen:
   jsr ScanInput
   jsr Controller
-  jsr move
+  ;jsr move
   inc $02A0 ; address to store game seed
 
   ldy $0223 ;address for start button
@@ -103,7 +103,7 @@ Titlescreen:
 
 
   jsr spriteloop ;initializes sprite data
-
+  jsr spawnPellet
 
 main: ;main game loop
   jsr ScanInput
@@ -422,6 +422,72 @@ storePress2:
 
   sta $0240, y
   rts
+
+spawnPellet:
+  jsr rng ;first excecution of function always returns zero for some reason
+  jsr rng
+  sta $0307 ;x coordinate of pellet spwan location
+  jsr rng
+  sta $0304 ;y coordinate of pellet spawn location
+
+
+  lsr $0307 ;shift three times and back to make a multiple of 8
+  lsr $0307
+  lsr $0307
+  clc ;clears carry bit just in case to not interfere with pellet spwan
+  rol $0307
+  rol $0307
+  rol $0307
+
+  lsr $0304 ;shift three times and back to make a multiple of 8
+  lsr $0304
+  lsr $0304
+  clc
+  rol $0304
+  rol $0304
+  rol $0304
+
+  lda #$06
+  sta $0305 ;pallete index
+  lda #%00000000
+  sta $0306
+
+  lda #$03 ; when writing to PPU OAM 0300 to 03FF
+  sta $4014 ; write sprite data to PPU OAM
+
+  lda #$00
+  
+
+
+  rts
+
+rng:
+  lda $02A0+1
+	tay ; store copy of high byte
+	; compute seed+1 ($39>>1 = %11100)
+	lsr ; shift to consume zeroes on left...
+	lsr
+	lsr
+	sta $02A0+1 ; now recreate the remaining bits in reverse order... %111
+	lsr
+	eor $02A0+1
+	lsr
+	eor $02A0+1
+	eor $02A0+0 ; recombine with original low byte
+	sta $02A0+1
+	; compute seed+0 ($39 = %111001)
+	tya ; original high byte
+	sta $02A0+0
+	asl
+	eor $02A0+0
+	asl
+	eor $02A0+0
+	asl
+	asl
+	asl
+	eor $02A0+0
+	sta $02A0+0
+	rts
 
 enableRendering:
   ldx #%00011110 ;enabling rendering
