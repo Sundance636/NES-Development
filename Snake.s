@@ -93,7 +93,7 @@ memclear: ; initializes ram and wipes it clean during vblank
 Titlescreen:
   jsr ScanInput
   jsr Controller
-  ;jsr move
+
   inc $02A0 ; address to store game seed
 
   ldy $0223 ;address for start button
@@ -425,13 +425,9 @@ storePress2:
 
 spawnPellet:
   jsr rng ;first excecution of function always returns zero for some reason
-  jsr rng
-  sta $0307 ;x coordinate of pellet spwan location
-  jsr rng
-  sta $0304 ;y coordinate of pellet spawn location
+  jsr screenboundCheck ;gens random number and checks bounds
 
-
-  lsr $0307 ;shift three times and back to make a multiple of 8
+  lsr $0307 ;shift three times and back to force a multiple of 8
   lsr $0307
   lsr $0307
   clc ;clears carry bit just in case to not interfere with pellet spwan
@@ -439,7 +435,7 @@ spawnPellet:
   rol $0307
   rol $0307
 
-  lsr $0304 ;shift three times and back to make a multiple of 8
+  lsr $0304 ;shift three times and back to force a multiple of 8
   lsr $0304
   lsr $0304
   clc
@@ -456,8 +452,6 @@ spawnPellet:
   sta $4014 ; write sprite data to PPU OAM
 
   lda #$00
-  
-
 
   rts
 
@@ -488,6 +482,21 @@ rng:
 	eor $02A0+0
 	sta $02A0+0
 	rts
+
+screenboundCheck: ;checks to make sure spawned pellet is within screen bounds
+  jsr rng
+  sta $0307 ;x coordinate of pellet spwan location
+  cmp #$F9 ; check if x is too high
+  bcs screenboundCheck ;loop until vaid number
+
+  jsr rng
+  sta $0304 ;y coordinate of pellet spawn location
+  cmp #$E0 ; check if y is too high
+  bcs screenboundCheck ;loop until vaid number
+  cmp #$08 ; check if y is too low
+  bcc screenboundCheck ;loop until vaid number
+
+  rts
 
 enableRendering:
   ldx #%00011110 ;enabling rendering
