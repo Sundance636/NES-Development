@@ -101,13 +101,15 @@ Titlescreen:
   ldy #$00
   bcc Titlescreen ; keep looping incrementing seed until start is pressed
 
-
   jsr spriteloop ;initializes sprite data
-  jsr spawnPellet
+
 
 main: ;main game loop
+  jsr PelletCollision
+  jsr spawnPellet
   jsr ScanInput
   jsr Controller
+  
   jsr move
   jsr delayLoop
 
@@ -191,7 +193,7 @@ moveUP:
 
 moveDOWN:
     ldx $0300 ;position in memory
-    cpx #$DF ;screen bound
+    cpx #$D8 ;screen bound
 
     bcs Return ;prevent going off screen bounds
 
@@ -216,7 +218,7 @@ moveDOWN:
     rts
 
 Return:
-rts
+  rts
 
 moveLEFT:
     ldx $0303 ;load position
@@ -423,7 +425,14 @@ storePress2:
   sta $0240, y
   rts
 
+Return2: ;second return function to branch to
+  rts
+
 spawnPellet:
+  lda #$00 ;00 means no pellet
+  cmp $02B0 ;stores info on whether a pellet is currently spawned
+  bcc Return2 ;skip spwan routine if there is already a pellet
+
   jsr rng ;first excecution of function always returns zero for some reason
   jsr screenboundCheck ;gens random number and checks bounds
 
@@ -444,13 +453,15 @@ spawnPellet:
   rol $0304
 
   lda #$06
-  sta $0305 ;pallete index
-  lda #%00000000
-  sta $0306
+  sta $0305 
+  lda #%00000001
+  sta $0306 ;pallete index (two lowest bits)
 
   lda #$03 ; when writing to PPU OAM 0300 to 03FF
   sta $4014 ; write sprite data to PPU OAM
 
+  lda #$01
+  sta $02B0 ; update flag for pellet
   lda #$00
 
   rts
@@ -498,6 +509,35 @@ screenboundCheck: ;checks to make sure spawned pellet is within screen bounds
 
   rts
 
+PelletCollision:
+  lda $0303 ;head x position
+  sta $02C0 
+  lda $0300 ;head y position
+  sta $02C1
+
+  lda $0307 ;pellet x position
+  sta $02C2 
+  lda $0304 ;pellet y position
+  sta $02C3
+
+  cmp $0300 ; compare y positions
+  beq PelletCollision2
+
+  rts
+
+PelletCollision2:
+  lda $0307
+  cmp $0303 ; compare x positions
+
+  beq HitDetected
+  rts
+
+HitDetected:
+  inc $02D0 ;memory address to track points
+  lda #$00
+  sta $02B0 ;mark pellet as despawned
+
+  rts
 enableRendering:
   ldx #%00011110 ;enabling rendering
   stx $2001 ;PPU mask register
@@ -526,7 +566,7 @@ paletteloop:
   rts
 
 SnakeHeadOAM:
-  .byte $1F
+  .byte $20 ;initialize starting ;y position to a multiple of 8
   .byte $01
   .byte %00000000
   .byte $10
